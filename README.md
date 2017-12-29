@@ -1,5 +1,5 @@
 # AWS etcd autoscaling cluster running CoreOS container Linux
-
+---
 This repo contains the Terraform and Ansible scripts to bring up an etcd cluster backed by an AWS autoscaling group using CoreOS instances. 
 
 #### What does this do?
@@ -69,6 +69,8 @@ Thats it. If all went well, you should be able to terminate one of the etcd inst
 You can check the health of the cluster by logging into one of the nodes (through the bastion host) and running `etcdctl cluster-health`
 
 You can also now point your application or Kubernetes master at the cluster as long as they have access to the private subnet.
+
+---
 
 ##### Notes
 
