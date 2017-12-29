@@ -48,15 +48,20 @@ Looking around online, others have moved the decision of bootstrapping or joinin
     * `aws_region` (us-west-2, us-east-1, etc)
     * `aws_avail_zone` (us-west-2a, us-east-1d, etc)
     * `ec2_public_key` (the public key that will be used for access to your instances)
+    
 2) In the `./etcd_lambda_zip` directory, you will need to have pip install the requests module:
     * You will want to use a pip version for Python3.6
     * From inside the `etcd_lambda_zip` dir, run: ```pip install requests -t ./```
     * Before zipping the contents of this directory, you can make any changes you'd like to the lambda function. In particular, you can change the `logger.setLevel(logging.INFO)` to `logger.setLevel(logging.DEBUG)` to troubleshoot issues with the Lambda function in CloudWatch
     * zip the contents of the `etcd_lambda_zip` dir into a file called etcdlambda.zip: `zip -r etcdlambda ./*`
     * Copy the `etcdlambda.zip` file to `../terraform_modules/etcd/launch_configs/user_data/`
+    
 3) Run ```terraform init``` from the root directory of the project (where the main.tf file is)
+
 4) Run ```terraform plan``` and check for any potential issues
+
 5) Run ```terraform apply``` to create the actual resources
+
 6) Once everything is up, go into the AWS console GUI and go to EC2 -> Autoscaling Groups -> Edit the autoscaling group to point to the `etcd_existing_cluster_launch_config`
 
 Thats it. If all went well, you should be able to terminate one of the etcd instances in the EC2 console and in a short time, have another instance spin up and replace it in the cluster.
