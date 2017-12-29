@@ -36,8 +36,8 @@ Looking around online, others have moved the decision of bootstrapping or joinin
 
 #### Requirements
 
-* Terraform
-* Python3+
+* Terraform==0.11.1
+* Python==3+
 * AWS account
 
 #### Usage
