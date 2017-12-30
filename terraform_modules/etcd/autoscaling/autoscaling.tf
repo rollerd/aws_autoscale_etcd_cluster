@@ -5,6 +5,10 @@ resource "aws_autoscaling_group" "etcd" {
   launch_configuration = "${var.etcd_launch_config}"
   vpc_zone_identifier = ["${var.private_subnet_id}"]
 
+  lifecycle {
+    ignore_changes = ["launch_configuration"]
+  }
+
   tag {
     key = "Name"
     value = "etcd"
