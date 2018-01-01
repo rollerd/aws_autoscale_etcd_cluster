@@ -4,12 +4,17 @@ import boto3
 import json
 import logging
 
-
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-EC2_CLIENT = boto3.client("ec2")
-AUTOSCALING_CLIENT = boto3.client("autoscaling")
+try:
+    EC2_CLIENT = boto3.client("ec2")
+    AUTOSCALING_CLIENT = boto3.client("autoscaling")
+except Exception as e:
+    logger.error("Could not create boto3 clients: {0}".format(e))
+    pass
+
+
 
 def add_etcd_member(available_etcd_instance_ip_list, private_ip):
     '''

@@ -6,3 +6,6 @@ keys/
 setterraenv.sh
 etcdlambda.zip
 temp/
+.cache/
+__pycache__/
+*.pyc
