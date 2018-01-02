@@ -119,20 +119,23 @@ def terminate_instance(message):
     terminating_instance_ip = id_to_ip(terminating_instance_id)
     logger.debug("terminate_instance: TERMINATING INSTANCE IP: {0}".format(terminating_instance_ip))
 
-    avail_instance_ips = get_autoscale_group_ips(message)
-    
-    if terminating_instance_ip: # If the instance still had an IP when we fetched the info, we remove it from our 'available' IP list"
-        avail_instance_ips.remove(terminating_instance_ip)
-    logger.debug("terminate_instance: AVAIL_INSTANCE_IPS: {0}".format(avail_instance_ips))
+    available_instance_ip_list = get_autoscale_group_ips(message)
 
-    etcd_result = remove_etcd_member(avail_instance_ips, terminating_instance_id) # Have an active etcd member remove the terminated instance
+    if available_instance_ip_list:
+ 
+        if terminating_instance_ip: # If the instance still had an IP when we fetched the info, we remove it from our 'available' IP list"
+            available_instance_ip_list.remove(terminating_instance_ip)
+        logger.debug("terminate_instance: AVAIL_INSTANCE_IPS: {0}".format(available_instance_ip_list))
 
-    if etcd_result == 2:
-        logger.warn("The instance terminated may never have been a member of the cluster. Confirm manually")
-    if etcd_result == 1:
-        logger.warn("There may have been an issue removing etcd member! Confirm removal")
+        etcd_result = remove_etcd_member(available_instance_ip_list, terminating_instance_id) # Have an active etcd member remove the terminated instance
 
-    complete_lifecycle_hook(message)
+        if etcd_result == 2:
+            logger.warn("The instance terminated may never have been a member of the cluster. Confirm manually")
+        if etcd_result == 1:
+            logger.warn("There may have been an issue removing etcd member! Confirm removal")
+
+    else:
+        logger.warn("Could not get list of available autoscale instance IPs")
 
     return "TERMINATE - FIN"
 
@@ -141,18 +144,20 @@ def launch_instance(message):
     '''
     Add instance to etcd cluster peer list and send CONTINUE response to lifecycle hook
     '''
-    instance_id = message["EC2InstanceId"]
+    launch_instance_id = message["EC2InstanceId"]
 
-    private_ip = id_to_ip(instance_id)
+    private_ip = id_to_ip(launch_instance_id)
 
     available_instance_ip_list = get_autoscale_group_ips(message)
 
-    available_instance_ip_list.remove(private_ip)
+    if available_instance_ip_list:
+        available_instance_ip_list.remove(private_ip)
 
-    etcd_result = add_etcd_member(available_instance_ip_list, private_ip)
+        etcd_result = add_etcd_member(available_instance_ip_list, private_ip)
+
+    else:
+        logger.warn("Could not get list of available autoscale instance IPs")
     
-    complete_lifecycle_hook(message)
-
     return "LAUNCH - FIN"
 
 
@@ -173,9 +178,11 @@ def kickoff(event, context):
         if lifecycle == "TERMINATING":
             logger.info("RUNNING TERMINATION FUNCTION")
             result = terminate_instance(message)
+            complete_lifecycle_hook(message)
 
         if lifecycle == "LAUNCHING":
             logger.info("RUNNING LAUNCH FUNCTION")
             result = launch_instance(message)
+            complete_lifecycle_hook(message)
 
     return result
