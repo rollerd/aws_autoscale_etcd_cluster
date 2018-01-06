@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import patch, MagicMock, Mock, call
 import json
 import etcd_lambda
 
@@ -13,82 +13,22 @@ launch_message = json.loads(launch_data['Records'][0]['Sns']['Message'])
 bad_data = {'bad': 'data'}
 
 
-@patch('etcd_lambda.terminate_instance')
-@patch('etcd_lambda.launch_instance')
+class TestBotoClients(unittest.TestCase):
+
+    def test_get_boto_clients(self):
+        with patch.object(etcd_lambda.boto3, 'client', return_value=None) as mock_client:
+            etcd_lambda.get_boto_clients()
+
+        calls = [call('ec2'), call('autoscaling')]
+        mock_client.assert_has_calls(calls)
+
 @patch('etcd_lambda.complete_lifecycle_hook')
 class TestKickoff(unittest.TestCase):
 
-    def test_kickoff_calls_terminate_instance_func_only(self, mock_complete_lifecycle_hook, mock_launch_instance, mock_terminate_instance):
-        etcd_lambda.kickoff(terminate_data, 'context')
-        mock_terminate_instance.assert_called_with(terminate_message)
-        mock_launch_instance.assert_not_called()
-
-    def test_kickoff_calls_launch_instance_func_only(self, mock_complete_lifecycle_hook, mock_launch_instance, mock_terminate_instance):
-        etcd_lambda.kickoff(launch_data, 'context')
-        mock_launch_instance.assert_called_with(launch_message)
-        mock_terminate_instance.assert_not_called()
-
-    def test_kickoff_bad_data_raise_exception(self, mock_complete_lifecycle_hook, mock_launch_instance, mock_terminate_instance):
-        self.assertRaises(KeyError, etcd_lambda.kickoff, bad_data, 'context')
-
-
-@patch('etcd_lambda.remove_etcd_member')
-@patch('etcd_lambda.id_to_ip', return_value='10.10.10.10')
-@patch('etcd_lambda.get_autoscale_group_ips', return_value=['10.10.10.10', '20.20.20.20', '30.30.30.30', '40.40.40.40'])
-class TestTerminateInstance(unittest.TestCase):
-
-    def test_terminate_instance_remove_etcd_member_called_with_correct_args(self, mock_get_autoscale_group_ips, mock_id_to_ip, mock_remove_etcd_member):
-        etcd_lambda.terminate_instance(terminate_message)
-        etcd_lambda.remove_etcd_member.assert_called_with(['20.20.20.20', '30.30.30.30', '40.40.40.40'], terminate_message['EC2InstanceId'])
-
-
-@patch('etcd_lambda.add_etcd_member')
-@patch('etcd_lambda.id_to_ip', return_value='10.10.10.10')
-@patch('etcd_lambda.get_autoscale_group_ips', return_value=['10.10.10.10', '20.20.20.20', '30.30.30.30', '40.40.40.40'])
-class TestLaunchInstance(unittest.TestCase):
-
-    def test_launch_instance_add_etcd_member_called_with_correct_args(self, mock_get_autoscale_group_ips, mock_id_to_ip, mock_add_etcd_member):
-        etcd_lambda.launch_instance(launch_message)
-        etcd_lambda.add_etcd_member.assert_called_with(['20.20.20.20', '30.30.30.30', '40.40.40.40'], '10.10.10.10')
-
-
-class TestIdToIp(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        etcd_lambda.setup_boto_clients()
-
-    def setUp(self):
-        self.instance_data_fixture = {'Reservations':[{'Instances':[{'PrivateIpAddress': '10.10.10.10'}]}]}
-    def test_id_to_ip_returns_correct_ip_address(self):
-        etcd_lambda.EC2_CLIENT.describe_instances = Mock(return_value=self.instance_data_fixture)
-        assert etcd_lambda.id_to_ip('instanceId') == '10.10.10.10'
-
-
-@patch('etcd_lambda.id_to_ip', return_value='10.10.10.10')
-class TestGetAutoScaleGroupIps(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        etcd_lambda.setup_boto_clients()
-
-    def setUp(self):
-        self.autoscaling_inst_data = {'AutoScalingInstances':[{'AutoScalingGroupName': 'etcd_autoscaling_group', 'InstanceId': '12345'}, {'AutoScalingGroupName': 'ignore', 'InstanceId': 'throw_error'}, {'AutoScalingGroupName': 'etcd_autoscaling_group', 'InstanceId': '3456'}]}
-
-    def test_get_autoscaling_group_ips_success(self, mock_id_to_ip):
-        etcd_lambda.AUTOSCALING_CLIENT.describe_auto_scaling_instances = Mock(return_value=self.autoscaling_inst_data)
-        assert etcd_lambda.get_autoscale_group_ips(launch_message) == ['10.10.10.10', '10.10.10.10']
-
-
-@patch('etcd_lambda.requests.get')
-class TestRemoveEtcdMember(unittest.TestCase):
-
-  i  
-
-
+    def test_launch_instance_called(self, mock_lifecycle_hook):
+        
     
 
-    
 
 
 if __name__=='__main__':

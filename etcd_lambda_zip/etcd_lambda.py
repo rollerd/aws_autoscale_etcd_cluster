@@ -153,18 +153,18 @@ def launch_instance(message):
     return "LAUNCH - FIN"
 
 
-def setup_boto_clients():
+def get_boto_clients():
     '''
     Create global variables for using the boto3 clients
     '''
-    global EC2_CLIENT
-    global AUTOSCALING_CLIENT
-
     try:
-        EC2_CLIENT = boto3.client("ec2")
-        AUTOSCALING_CLIENT = boto3.client("autoscaling")
+        ec2_client = boto3.client("ec2")
+        autoscaling_client = boto3.client("autoscaling")
     except Exception as e:
         logger.error("Could not create boto3 clients: {0}".format(e))
+        sys.exit(1)
+
+    return ec2_client, autoscaling_client
 
 
 def kickoff(event, context):
@@ -173,8 +173,6 @@ def kickoff(event, context):
     '''
     records = event["Records"]
     logger.debug("kickoff: records from SNS event: {0}".format(records))
-
-    setup_boto_clients()
 
     for record in records:
         sns = record["Sns"]
@@ -185,12 +183,13 @@ def kickoff(event, context):
         if lifecycle == "TERMINATING":
             logger.info("RUNNING TERMINATION FUNCTION")
             result = terminate_instance(message)
-            complete_lifecycle_hook(message)
 
         if lifecycle == "LAUNCHING":
             logger.info("RUNNING LAUNCH FUNCTION")
             result = launch_instance(message)
-            complete_lifecycle_hook(message)
+
+        complete_lifecycle_hook(message)
+
 
     if result == 0:
         logger.info('Success')
