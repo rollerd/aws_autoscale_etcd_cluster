@@ -7,14 +7,6 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-try:
-    EC2_CLIENT = boto3.client("ec2")
-    AUTOSCALING_CLIENT = boto3.client("autoscaling")
-except Exception as e:
-    logger.error("Could not create boto3 clients: {0}".format(e))
-    pass
-
-
 
 def add_etcd_member(available_etcd_instance_ip_list, private_ip):
     '''
@@ -98,7 +90,7 @@ def get_autoscale_group_ips(message):
 
     all_autoscaling_instances_list = autoscaling_instance_data["AutoScalingInstances"] # Pull out the instance data
     logger.debug("get_autoscale_group_ips: ALL_AUTOSCALING INSTANCES_LIST: {0}".format(all_autoscaling_instances_list))
-
+#    print(all_autoscaling_instances_list)
     group_instance_ips = []
     for instance in all_autoscaling_instances_list: # Create a list of IP addresses for the instances in the specified autoscaling group
         if instance["AutoScalingGroupName"] == message["AutoScalingGroupName"]: # If instance is a part of the autoscaling group specified in the SNS message
@@ -161,13 +153,28 @@ def launch_instance(message):
     return "LAUNCH - FIN"
 
 
+def setup_boto_clients():
+    '''
+    Create global variables for using the boto3 clients
+    '''
+    global EC2_CLIENT
+    global AUTOSCALING_CLIENT
+
+    try:
+        EC2_CLIENT = boto3.client("ec2")
+        AUTOSCALING_CLIENT = boto3.client("autoscaling")
+    except Exception as e:
+        logger.error("Could not create boto3 clients: {0}".format(e))
+
+
 def kickoff(event, context):
     '''
     Receive event+context from SNS that was triggered by lifecycle hook from autoscaling event
     '''
     records = event["Records"]
     logger.debug("kickoff: records from SNS event: {0}".format(records))
-     
+
+    setup_boto_clients()
 
     for record in records:
         sns = record["Sns"]
@@ -185,4 +192,7 @@ def kickoff(event, context):
             result = launch_instance(message)
             complete_lifecycle_hook(message)
 
-    return result
+    if result == 0:
+        logger.info('Success')
+    else:
+        logger.info('Error')

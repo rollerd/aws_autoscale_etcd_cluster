@@ -12,33 +12,7 @@ terminate_message = json.loads(terminate_data['Records'][0]['Sns']['Message'])
 launch_message = json.loads(launch_data['Records'][0]['Sns']['Message']) 
 bad_data = {'bad': 'data'}
 
-#class TestKickoff(unittest.TestCase):
-#
-#    def setUp(self):
-#        etcd_lambda.terminate_instance = Mock(return_value = True)
-#        etcd_lambda.launch_instance = Mock(return_value = True)
-#        etcd_lambda.complete_lifecycle_hook = Mock(return_value = True)
-#
-#    def tearDown(self):
-#        etcd_lambda.terminate_instance.reset_mock()
-#        etcd_lambda.launch_instance.reset_mock()
-#        etcd_lambda.complete_lifecycle_hook.reset_mock()
-#        print(dir(etcd_lambda.complete_lifecycle_hook))
-#
-#    def test_kickoff_calls_terminate_instance_func(self):
-#        etcd_lambda.kickoff(terminate_data, 'context')
-#        etcd_lambda.terminate_instance.assert_called_with(terminate_message)
-#
-#    def test_kickoff_does_not_call_launch_instance_func(self):
-#        etcd_lambda.kickoff(terminate_data, 'context')
-#        etcd_lambda.launch_instance.assert_not_called()
-#
-#    def test_kickoff_calls_launch_instance_func(self):
-#        etcd_lambda.kickoff(launch_data, 'context')
-#        etcd_lambda.launch_instance.assert_called_with(launch_message)
-#
-#    def test_kickoff_bad_data_raise_exception(self):
-#        self.assertRaises(KeyError, etcd_lambda.kickoff, bad_data, 'context')
+
 @patch('etcd_lambda.terminate_instance')
 @patch('etcd_lambda.launch_instance')
 @patch('etcd_lambda.complete_lifecycle_hook')
@@ -77,7 +51,43 @@ class TestLaunchInstance(unittest.TestCase):
         etcd_lambda.launch_instance(launch_message)
         etcd_lambda.add_etcd_member.assert_called_with(['20.20.20.20', '30.30.30.30', '40.40.40.40'], '10.10.10.10')
 
-class Test
+
+class TestIdToIp(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        etcd_lambda.setup_boto_clients()
+
+    def setUp(self):
+        self.instance_data_fixture = {'Reservations':[{'Instances':[{'PrivateIpAddress': '10.10.10.10'}]}]}
+    def test_id_to_ip_returns_correct_ip_address(self):
+        etcd_lambda.EC2_CLIENT.describe_instances = Mock(return_value=self.instance_data_fixture)
+        assert etcd_lambda.id_to_ip('instanceId') == '10.10.10.10'
+
+
+@patch('etcd_lambda.id_to_ip', return_value='10.10.10.10')
+class TestGetAutoScaleGroupIps(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        etcd_lambda.setup_boto_clients()
+
+    def setUp(self):
+        self.autoscaling_inst_data = {'AutoScalingInstances':[{'AutoScalingGroupName': 'etcd_autoscaling_group', 'InstanceId': '12345'}, {'AutoScalingGroupName': 'ignore', 'InstanceId': 'throw_error'}, {'AutoScalingGroupName': 'etcd_autoscaling_group', 'InstanceId': '3456'}]}
+
+    def test_get_autoscaling_group_ips_success(self, mock_id_to_ip):
+        etcd_lambda.AUTOSCALING_CLIENT.describe_auto_scaling_instances = Mock(return_value=self.autoscaling_inst_data)
+        assert etcd_lambda.get_autoscale_group_ips(launch_message) == ['10.10.10.10', '10.10.10.10']
+
+
+@patch('etcd_lambda.requests.get')
+class TestRemoveEtcdMember(unittest.TestCase):
+
+  i  
+
+
+    
+
     
 
 
