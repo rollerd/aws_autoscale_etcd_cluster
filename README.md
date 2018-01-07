@@ -62,13 +62,15 @@ Looking around online, others have moved the decision of bootstrapping or joinin
 
 5) Run ```terraform apply``` to create the actual resources
 
-6) Once everything is up, go into the AWS console GUI and go to EC2 -> Autoscaling Groups -> Edit the autoscaling group to point to the `etcd_existing_cluster_launch_config`
-
 Thats it. If all went well, you should be able to terminate one of the etcd instances in the EC2 console and in a short time, have another instance spin up and replace it in the cluster.
 
 You can check the health of the cluster by logging into one of the nodes (through the bastion host) and running `etcdctl cluster-health`
 
 You can also now point your application or Kubernetes master at the cluster as long as they have access to the private subnet.
+
+If you see that new instances are coming up joined to the cluster, you may need to manually change the autoscaling group:
+
+Once everything is up, go into the AWS console GUI and go to EC2 -> Autoscaling Groups -> Edit the autoscaling group to point to the `etcd_existing_cluster_launch_config`
 
 ---
 
