@@ -77,4 +77,6 @@ You can also now point your application or Kubernetes master at the cluster as l
 There are definitely improvements that could be made to this setup and Ill hopefully have more time to work on sorting out bugs and more in-depth options, but for now its an easy way to get one of the more annoying pieces of something like a manually built Kubernetes cluster going.
 
 ###### TODO
-There is an SNS message when the cluster comes up that triggers the $LATEST lambda function and it errors. Its not an autoscaling event (confirmation maybe?). Need to figure out what it is and respond accordingly. No impact on anything else.
+- There is an SNS message when the cluster comes up that triggers the $LATEST lambda function and it errors. Its not an autoscaling event (confirmation maybe?). Need to figure out what it is and respond accordingly. No impact on anything else.
+
+- Fix/make the returns in the inner functions more robust/actually mean something to the calling function
