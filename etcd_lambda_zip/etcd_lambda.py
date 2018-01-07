@@ -7,6 +7,8 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+etcd_existing_cluster_launch_config = 'etcd_existing_cluster_launch_config'
+
 
 def add_etcd_member(available_etcd_instance_ip_list, private_ip):
     '''
@@ -147,6 +149,8 @@ def launch_instance(message):
 
     available_instance_ip_list = get_autoscaling_group_ips(message)
 
+    ensure_correct_launch_config(message)
+
     if available_instance_ip_list:
         available_instance_ip_list.remove(private_ip)
 
@@ -170,6 +174,21 @@ def get_boto_clients():
         sys.exit(1)
 
     return ec2_client, autoscaling_client
+
+
+def ensure_correct_launch_config(message):
+    '''
+    Check the current launch config for the etcd_autoscaling_group and change it from new cluster to existing cluster if needed
+    '''
+    ec2_client, autoscaling_client = get_boto_clients()
+
+    autoscaling_group_data = autoscaling_client.describe_auto_scaling_groups(AutoScalingGroupNames=[message['AutoScalingGroupName']])
+
+    current_launch_config = autoscaling_group_data['AutoScalingGroupName'][0]['LaunchConfigurationName']
+
+    if current_launch_config != 'etcd_existing_cluster_launch_config':
+        response = autoscaling_client.update_auto_scaling_group(AutoScalingGroupName=message['AutoScalingGroupName'], LaunchConfigurationName=etcd_existing_cluster_launch_config)
+        logger.info('Update launch config response: {0}'.format(response))
 
 
 def kickoff(event, context):

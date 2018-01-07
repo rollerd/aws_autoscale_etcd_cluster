@@ -80,3 +80,5 @@ There are definitely improvements that could be made to this setup and Ill hopef
 - There is an SNS message when the cluster comes up that triggers the $LATEST lambda function and it errors. Its not an autoscaling event (confirmation maybe?). Need to figure out what it is and respond accordingly. No impact on anything else.
 
 - Fix/make the returns in the inner functions more robust/actually mean something to the calling function
+
+- Add some alerting to let users know if the lambda script fails
