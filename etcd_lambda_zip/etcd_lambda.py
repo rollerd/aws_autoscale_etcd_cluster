@@ -41,6 +41,7 @@ def remove_etcd_member(available_instance_ip_list, terminating_instance_name):
             logger.error("ERROR(passing): {0}".format(err))
             pass # log issue but continue processing IPs
 
+    member_id_to_remove = None
     for member in etcd_member_dict["members"]: # Figure out the etcd id for the member we want to remove
         if member["name"] == terminating_instance_name:
             member_id_to_remove = member["id"]
@@ -63,7 +64,8 @@ def id_to_ip(instance_id):
     '''
     Given an ec2 autoscaling instance ID, return the IP for that instance or None if none exist
     '''
-    instance_data = EC2_CLIENT.describe_instances(Filters=[{"Name": "instance-id", "Values": [instance_id]}])
+    ec2_client, autoscaling_client = get_boto_clients()
+    instance_data = ec2_client.describe_instances(Filters=[{"Name": "instance-id", "Values": [instance_id]}])
     logger.debug("id_to_ip: INSTANCE_DATA: {0}".format(instance_data))
     private_ip = instance_data["Reservations"][0]["Instances"][0].get("PrivateIpAddress", None)
 
@@ -82,14 +84,16 @@ def complete_lifecycle_hook(message):
     logger.info("complete_lifecycle_hook: RESPONSE={0}".format(response))
 
 
-def get_autoscale_group_ips(message):
+def get_autoscaling_group_ips(message):
     '''
     Collect autoscaling group instance data and return list of instance IPs
     '''
-    autoscaling_instance_data = AUTOSCALING_CLIENT.describe_auto_scaling_instances() # Get the info for all instances in autoscaling groups
+    ec2_client, autoscaling_client = get_boto_clients()
+
+    autoscaling_instance_data = autoscaling_client.describe_auto_scaling_instances() # Get the info for all instances in autoscaling groups
 
     all_autoscaling_instances_list = autoscaling_instance_data["AutoScalingInstances"] # Pull out the instance data
-    logger.debug("get_autoscale_group_ips: ALL_AUTOSCALING INSTANCES_LIST: {0}".format(all_autoscaling_instances_list))
+    logger.debug("get_autoscaling_group_ips: ALL_AUTOSCALING INSTANCES_LIST: {0}".format(all_autoscaling_instances_list))
 #    print(all_autoscaling_instances_list)
     group_instance_ips = []
     for instance in all_autoscaling_instances_list: # Create a list of IP addresses for the instances in the specified autoscaling group
@@ -111,7 +115,7 @@ def terminate_instance(message):
     terminating_instance_ip = id_to_ip(terminating_instance_id)
     logger.debug("terminate_instance: TERMINATING INSTANCE IP: {0}".format(terminating_instance_ip))
 
-    available_instance_ip_list = get_autoscale_group_ips(message)
+    available_instance_ip_list = get_autoscaling_group_ips(message)
 
     if available_instance_ip_list:
  
@@ -129,7 +133,7 @@ def terminate_instance(message):
     else:
         logger.warn("Could not get list of available autoscale instance IPs")
 
-    return "TERMINATE - FIN"
+    return 0
 
 
 def launch_instance(message):
@@ -140,7 +144,7 @@ def launch_instance(message):
 
     private_ip = id_to_ip(launch_instance_id)
 
-    available_instance_ip_list = get_autoscale_group_ips(message)
+    available_instance_ip_list = get_autoscaling_group_ips(message)
 
     if available_instance_ip_list:
         available_instance_ip_list.remove(private_ip)
@@ -150,7 +154,7 @@ def launch_instance(message):
     else:
         logger.warn("Could not get list of available autoscale instance IPs")
     
-    return "LAUNCH - FIN"
+    return 0
 
 
 def get_boto_clients():
@@ -174,6 +178,7 @@ def kickoff(event, context):
     records = event["Records"]
     logger.debug("kickoff: records from SNS event: {0}".format(records))
 
+    result = None
     for record in records:
         sns = record["Sns"]
         message = json.loads(sns["Message"])
