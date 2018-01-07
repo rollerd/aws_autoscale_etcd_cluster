@@ -143,13 +143,13 @@ def launch_instance(message):
     '''
     Add instance to etcd cluster peer list and send CONTINUE response to lifecycle hook
     '''
+    ensure_correct_launch_config(message)
+
     launch_instance_id = message["EC2InstanceId"]
 
     private_ip = id_to_ip(launch_instance_id)
 
     available_instance_ip_list = get_autoscaling_group_ips(message)
-
-    ensure_correct_launch_config(message)
 
     if available_instance_ip_list:
         available_instance_ip_list.remove(private_ip)

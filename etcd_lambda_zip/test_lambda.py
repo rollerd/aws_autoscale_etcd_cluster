@@ -50,13 +50,13 @@ class TestTerminateInstance(unittest.TestCase):
         etcd_lambda.terminate_instance(terminate_message)
         mock_remove_etcd_member.assert_called_with(['20.20.20.20', '30.30.30.30'], terminate_message['EC2InstanceId'])
 
-
+@patch('etcd_lambda.ensure_correct_launch_config')
 @patch('etcd_lambda.get_autoscaling_group_ips', return_value=['10.10.10.10', '20.20.20.20', '30.30.30.30'])
 @patch('etcd_lambda.id_to_ip', return_value='10.10.10.10')
 @patch('etcd_lambda.add_etcd_member')
 class TestLaunchInstance(unittest.TestCase):
 
-    def test_launch_instance__add_member_called_without_launch_instance_ip(self, mock_add_etcd_member, mock_id_to_ip, mock_group_ips):
+    def test_launch_instance__add_member_called_without_launch_instance_ip(self, mock_add_etcd_member, mock_id_to_ip, mock_group_ips, mock_ensure_launch_config):
         etcd_lambda.launch_instance(launch_message)
         mock_add_etcd_member.assert_called_with(['20.20.20.20', '30.30.30.30'], '10.10.10.10')
 
