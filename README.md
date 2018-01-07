@@ -28,15 +28,13 @@ Unmodified, this setup with bring up the following AWS services/pieces:
 
 The cluster is bootstrapped via some simple bash scripts and systemd services defined in the `./ignition_files/ignition_static.yml` file. When an instance triggers a lifecycle hook, the hook publishes to an SNS topic. A Python Lambda function is subscribed to this topic and can react based on whether it is a TERMINATE or LAUNCH message. The lambda function has the ability to remove the terminated member from the etcd cluster and add the new member. 
 
-Currently, pointing the autoscaling group to the existing member launch config after intial bootstrapping will cause any new instances created to be able to join the existing etcd cluster. This is a manual step that needs to be done only once at the time of the intial cluster creation. 
+Currently, pointing the autoscaling group to the existing member launch config after intial bootstrapping will cause any new instances created to be able to join the existing etcd cluster. 
 
-Is there a way to modify a Terraform resource/module after intial creation without having to modify and re-run Terraform again just to change it?
-
-Looking around online, others have moved the decision of bootstrapping or joining a cluster to the scripts in the user data that run at the time the instance comes up. It's something to consider but adds comlexity and doesn't feel as simple and straightforward to read as a new launch config with literally just the ETCD_INITIAL_CLUSTER variable changed from 'new' to 'existing'. The complexity in this solution resides in the Lambda Python function but is easier to read/more flexible in how it can be made to handle autoscaling events. ¯\\_(ツ)_/¯
+Looking around, others have moved the decision of bootstrapping or joining a cluster to the scripts in the user data that run at the time the instance comes up. It's something to consider but adds complexity and doesn't feel as simple and straightforward to read as a new launch config with just the ETCD_INITIAL_CLUSTER variable changed from 'new' to 'existing'. The complexity in this solution resides in the Python Lambda function but is easier to read/more flexible in how it can be made to handle autoscaling events. ¯\\_(ツ)_/¯
 
 #### Requirements
 
-* Terraform==0.11.1
+* Terraform==0.11.1+
 * Python==3+
 * AWS account
 
