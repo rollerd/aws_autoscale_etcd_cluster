@@ -76,7 +76,8 @@ def complete_lifecycle_hook(message):
     '''
     Let autoscaling group know that it can continue with scale in/out request
     '''
-    response = AUTOSCALING_CLIENT.complete_lifecycle_action(LifecycleHookName=message["LifecycleHookName"], 
+    ec2_client, autoscaling_client = get_boto_clients()
+    response = autoscaling_client.complete_lifecycle_action(LifecycleHookName=message["LifecycleHookName"], 
                                                             AutoScalingGroupName=message["AutoScalingGroupName"], 
                                                             LifecycleActionToken=message["LifecycleActionToken"], 
                                                             LifecycleActionResult="CONTINUE")
