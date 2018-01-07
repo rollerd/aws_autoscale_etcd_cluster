@@ -23,18 +23,19 @@ class TestBotoClients(unittest.TestCase):
         mock_client.assert_has_calls(calls)
 
 
+@patch('etcd_lambda.ensure_correct_launch_config')
 @patch('etcd_lambda.terminate_instance')
 @patch('etcd_lambda.launch_instance')
 @patch('etcd_lambda.complete_lifecycle_hook')
 class TestKickoff(unittest.TestCase):
 
-    def test_kickoff__launch_instance_called(self, mock_lifecycle_hook, mock_launch_instance, mock_terminate_instance):
+    def test_kickoff__launch_instance_called(self, mock_lifecycle_hook, mock_launch_instance, mock_terminate_instance, mock_launch_config):
         etcd_lambda.kickoff(launch_data, 'context')
         mock_launch_instance.assert_called()
         mock_terminate_instance.assert_not_called()
         mock_lifecycle_hook.assert_called()
 
-    def test_kickoff__terminate_instance_called(self, mock_lifecycle_hook, mock_launch_instance, mock_terminate_instance):
+    def test_kickoff__terminate_instance_called(self, mock_lifecycle_hook, mock_launch_instance, mock_terminate_instance, mock_launch_config):
         etcd_lambda.kickoff(terminate_data, 'context')
         mock_terminate_instance.assert_called()
         mock_launch_instance.assert_not_called()
@@ -50,13 +51,12 @@ class TestTerminateInstance(unittest.TestCase):
         etcd_lambda.terminate_instance(terminate_message)
         mock_remove_etcd_member.assert_called_with(['20.20.20.20', '30.30.30.30'], terminate_message['EC2InstanceId'])
 
-@patch('etcd_lambda.ensure_correct_launch_config')
 @patch('etcd_lambda.get_autoscaling_group_ips', return_value=['10.10.10.10', '20.20.20.20', '30.30.30.30'])
 @patch('etcd_lambda.id_to_ip', return_value='10.10.10.10')
 @patch('etcd_lambda.add_etcd_member')
 class TestLaunchInstance(unittest.TestCase):
 
-    def test_launch_instance__add_member_called_without_launch_instance_ip(self, mock_add_etcd_member, mock_id_to_ip, mock_group_ips, mock_ensure_launch_config):
+    def test_launch_instance__add_member_called_without_launch_instance_ip(self, mock_add_etcd_member, mock_id_to_ip, mock_group_ips):
         etcd_lambda.launch_instance(launch_message)
         mock_add_etcd_member.assert_called_with(['20.20.20.20', '30.30.30.30'], '10.10.10.10')
 

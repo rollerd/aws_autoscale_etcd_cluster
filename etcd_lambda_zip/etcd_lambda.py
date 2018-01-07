@@ -143,8 +143,6 @@ def launch_instance(message):
     '''
     Add instance to etcd cluster peer list and send CONTINUE response to lifecycle hook
     '''
-    ensure_correct_launch_config(message)
-
     launch_instance_id = message["EC2InstanceId"]
 
     private_ip = id_to_ip(launch_instance_id)
@@ -202,21 +200,30 @@ def kickoff(event, context):
     for record in records:
         sns = record["Sns"]
         message = json.loads(sns["Message"])
-        metadata = json.loads(message["NotificationMetadata"])
-        lifecycle = metadata["transition"] # The metadata that we have added via the lifecycle hook (not a standard field)
 
-        if lifecycle == "TERMINATING":
-            logger.info("RUNNING TERMINATION FUNCTION")
-            result = terminate_instance(message)
+        try:
+            metadata = json.loads(message.get("NotificationMetadata", None))
+        except TypeError as e:
+            logger.debug('No metadata in record: {0}'.format(e))
+            metadata = None
 
-        if lifecycle == "LAUNCHING":
-            logger.info("RUNNING LAUNCH FUNCTION")
-            result = launch_instance(message)
+        if metadata:
+            lifecycle = metadata["transition"] # The metadata that we have added via the lifecycle hook (not a standard field)
 
-        complete_lifecycle_hook(message)
+            if lifecycle == "TERMINATING":
+                logger.info("RUNNING TERMINATION FUNCTION")
+                result = terminate_instance(message)
+    
+            if lifecycle == "LAUNCHING":
+                logger.info("RUNNING LAUNCH FUNCTION")
+                result = launch_instance(message)
+    
+            complete_lifecycle_hook(message)
 
-
-    if result == 0:
-        logger.info('Success')
-    else:
-        logger.info('Error')
+            if result == 0:
+                logger.info('Success')
+            else:
+                logger.info('Error')
+        
+        else:
+            ensure_correct_launch_config(message)
