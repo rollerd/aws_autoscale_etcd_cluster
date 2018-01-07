@@ -184,7 +184,7 @@ def ensure_correct_launch_config(message):
 
     autoscaling_group_data = autoscaling_client.describe_auto_scaling_groups(AutoScalingGroupNames=[message['AutoScalingGroupName']])
 
-    current_launch_config = autoscaling_group_data['AutoScalingGroupName'][0]['LaunchConfigurationName']
+    current_launch_config = autoscaling_group_data['AutoScalingGroups'][0]['LaunchConfigurationName']
 
     if current_launch_config != 'etcd_existing_cluster_launch_config':
         response = autoscaling_client.update_auto_scaling_group(AutoScalingGroupName=message['AutoScalingGroupName'], LaunchConfigurationName=etcd_existing_cluster_launch_config)
