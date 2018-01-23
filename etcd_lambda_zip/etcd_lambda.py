@@ -226,4 +226,9 @@ def kickoff(event, context):
                 logger.info('Error')
         
         else:
+            sns_test_notification = message.get("Event", None)
+            if sns_test_notification and sns_test_notification == "autoscaling:TEST_NOTIFICATION":
+                logger.debug("kickoff: Got SNS TEST_NOTIFICATION")
+            else:
+                logger.warn("kickoff: Recieved SNS message, but it wasn't one of: launch, terminate, or test_notification")
             ensure_correct_launch_config(message)
