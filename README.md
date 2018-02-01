@@ -78,6 +78,6 @@ Once everything is up, go into the AWS console GUI and go to EC2 -> Autoscaling 
 There are definitely improvements that could be made to this setup and Ill hopefully have more time to work on sorting out bugs and more in-depth options, but for now its an easy way to get one of the more annoying pieces of something like a manually built Kubernetes cluster going.
 
 ###### TODO
-- Fix/make the returns in the inner functions more robust/actually mean something to the calling function
+- Clean up the Lambda Python script :(
 
 - Add some alerting to let users know if the lambda script fails
