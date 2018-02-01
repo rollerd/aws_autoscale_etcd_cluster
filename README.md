@@ -1,10 +1,10 @@
 # AWS etcd autoscaling cluster running CoreOS container Linux
 ---
-This repo contains the Terraform and Ansible scripts to bring up an etcd cluster backed by an AWS autoscaling group using CoreOS instances. 
+This repo contains the Terraform configs and Python scripts to bring up an etcd cluster backed by an AWS autoscaling group using CoreOS instances. 
 
 #### What does this do?
 
-Unmodified, this setup with bring up the following AWS services/pieces:
+Unmodified, this setup will bring up the following AWS services/pieces:
 
 * VPC
   * private subnet (no public IPs)
@@ -28,7 +28,7 @@ Unmodified, this setup with bring up the following AWS services/pieces:
 
 The cluster is bootstrapped via some simple bash scripts and systemd services defined in the `./ignition_files/ignition_static.yml` file. When an instance triggers a lifecycle hook, the hook publishes to an SNS topic. A Python Lambda function is subscribed to this topic and can react based on whether it is a TERMINATE or LAUNCH message. The lambda function has the ability to remove the terminated member from the etcd cluster and add the new member. 
 
-Currently, by pointing the autoscaling group to the existing member launch config after intial bootstrapping will cause any new instances created to be able to join the existing etcd cluster. 
+Currently, by pointing the autoscaling group to the existing_member_launch_config after intial bootstrapping will cause any new instances created to be able to join the existing etcd cluster. 
 
 Looking around, others have moved the decision of bootstrapping or joining a cluster to the scripts in the user data that run at the time the instance comes up. It's something to consider but adds complexity and doesn't feel as simple and straightforward to read as a new launch config with just the ETCD_INITIAL_CLUSTER variable changed from 'new' to 'existing'. The complexity in this solution resides in the Python Lambda function but is easier to read/more flexible in how it can be made to handle autoscaling events. ¯\\_(ツ)_/¯
 
